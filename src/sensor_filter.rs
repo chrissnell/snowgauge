@@ -128,6 +128,7 @@ impl SensorFilter {
         }
     }
 
+    #[cfg(test)]
     /// Reset the filter (equivalent to bringing RX pin low on MB7544)
     pub fn reset(&mut self) {
         debug!("Filter reset");
@@ -135,11 +136,13 @@ impl SensorFilter {
         self.reading_count = 0;
     }
 
+    #[cfg(test)]
     /// Check if the filter has completed its initialization period
     pub fn is_initialized(&self) -> bool {
         self.reading_count >= self.init_period
     }
 
+    #[cfg(test)]
     /// Get the current filtered value if available
     pub fn current_value(&self) -> Option<f64> {
         self.filtered_value
