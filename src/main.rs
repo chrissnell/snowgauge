@@ -270,8 +270,20 @@ impl SnowGaugeServiceImpl {
                                             }
                                         } else {
                                             error!("Invalid data format received: {:?}", buf);
-                                            error!("Closing port and reconnecting...");
-                                            break;
+                                            // Try to resynchronize by finding 'R' marker
+                                            // Search for 'R' in the buffer to realign
+                                            if let Some(pos) = buf.iter().position(|&b| b == b'R') {
+                                                // Found 'R' at position pos
+                                                // Keep data from 'R' onwards and set offset accordingly
+                                                buf.copy_within(pos..6, 0);
+                                                offset = 6 - pos;
+                                                error!("Resynchronized: found 'R' at position {}, new offset {}", pos, offset);
+                                            } else {
+                                                // No 'R' found, reset and start fresh
+                                                offset = 0;
+                                                error!("No sync marker found, resetting buffer");
+                                            }
+                                            continue;
                                         }
                                         offset = 0;
                                     }
