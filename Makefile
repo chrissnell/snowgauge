@@ -4,10 +4,10 @@
 RPI_HOST ?= pi@snow
 RPI_TARGET = armv7-unknown-linux-gnueabihf
 
-# Default target
-all: build
+# Default target - always build release
+all: release
 
-# Build debug version
+# Build debug version (use explicitly if needed)
 build:
 	cargo build
 
