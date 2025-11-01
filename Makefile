@@ -43,11 +43,14 @@ run:
 run-debug:
 	cargo run -- --simulator --debug --log
 
-# Build for Raspberry Pi (ARMv7) - requires 'cross' tool
+# Build for Raspberry Pi (ARMv7) - requires rustup target and linker
 build-rpi:
 	@echo "Building for Raspberry Pi (armv7-unknown-linux-gnueabihf)..."
-	@echo "Note: This requires 'cross' to be installed. See build-rpi-remote instead."
-	cross build --release --target $(RPI_TARGET)
+	@echo "Note: First time setup requires:"
+	@echo "  rustup target add armv7-unknown-linux-gnueabihf"
+	@echo "  brew tap messense/macos-cross-toolchains"
+	@echo "  brew install armv7-unknown-linux-gnueabihf"
+	cargo build --release --target $(RPI_TARGET)
 	@echo "Binary location: target/$(RPI_TARGET)/release/snowgauge"
 	@file target/$(RPI_TARGET)/release/snowgauge
 
