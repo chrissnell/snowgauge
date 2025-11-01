@@ -502,14 +502,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start the processing task
     let service_clone = Arc::clone(&service);
-    tokio::spawn(async move {
+    let processing_task = tokio::spawn(async move {
         if let Err(e) = service_clone.process_readings(rx).await {
             error!("Error processing readings: {}", e);
         }
     });
 
     // Start serial reader or simulator
-    if args.simulator {
+    let data_source_task = if args.simulator {
         let cancel_token_clone = cancel_token.clone();
         tokio::spawn(async move {
             if let Err(e) = SnowGaugeServiceImpl::simulator(
@@ -521,8 +521,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ).await {
                 error!("Simulator error: {}", e);
             }
-        });
-        info!("Started simulator with base_distance={}", args.simulator_base_distance);
+        })
     } else {
         let port_name = args.port.clone();
         let log_distance = args.log;
@@ -537,7 +536,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             ).await {
                 error!("Serial reader error: {}", e);
             }
-        });
+        })
+    };
+
+    if args.simulator {
+        info!("Started simulator with base_distance={}", args.simulator_base_distance);
+    } else {
         info!("Started serial reader on port {}", args.port);
     }
 
@@ -562,6 +566,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .await?;
 
-    info!("Server stopped");
+    info!("Server stopped, waiting for background tasks to complete...");
+
+    // Wait for the data source task (serial reader or simulator) to finish
+    // When it completes, tx is dropped, which closes the channel
+    if let Err(e) = data_source_task.await {
+        error!("Data source task panicked: {}", e);
+    }
+
+    // Wait for the processing task to finish
+    // It will complete once the channel is closed
+    if let Err(e) = processing_task.await {
+        error!("Processing task panicked: {}", e);
+    }
+
+    info!("All tasks completed, exiting");
     Ok(())
 }
