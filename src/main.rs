@@ -193,10 +193,10 @@ impl SnowGaugeServiceImpl {
         cancel_token: CancellationToken,
         filter_config: Option<(usize, f64, f64)>, // (init_period, rate_limit, alpha)
     ) -> Result<(), Box<dyn std::error::Error>> {
-        // Spawn blocking task for serial I/O and return immediately
+        // Spawn blocking task for serial I/O and await its completion
         // This task will be cancelled when the cancel_token is triggered
         let cancel_token_clone = cancel_token.clone();
-        tokio::task::spawn_blocking(move || {
+        let handle = tokio::task::spawn_blocking(move || {
             let mut backoff = Duration::from_secs(1);
             const MAX_BACKOFF: Duration = Duration::from_secs(60);
 
@@ -317,6 +317,8 @@ impl SnowGaugeServiceImpl {
             }
         });
 
+        // Wait for the blocking task to complete
+        handle.await?;
         Ok(())
     }
 
